@@ -4,17 +4,23 @@ import { connect } from 'react-redux'
 class StudentsTable extends Component {
 
   renderMangSV = () => {
+    let number = 0;
     return this.props.mangSinhVien.map((sinhVien) => {
       let { maSV, hoTen, sdt, email } = sinhVien;
-
-      return <tr key={`sv-${sinhVien.maSV}`}>
+      return <tr key={`sv-${number++}`}>
         <td>{maSV}</td>
         <td>{hoTen}</td>
         <td>{sdt}</td>
         <td>{email}</td>
         <td className='text-center'>
           <button className="btn d-inline-block mr-2 btn-info">Xem</button>
-          <button className="btn d-inline-block btn-danger">Xóa</button>
+          <button onClick={() => { 
+            let action = {
+              type: 'XOA_SINH_VIEN',
+              svXoa: maSV
+            }
+            this.props.dispatch(action);
+           }} className="btn d-inline-block btn-danger">Xóa</button>
         </td>
       </tr>
     })
