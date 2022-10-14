@@ -3,6 +3,15 @@ import { connect } from 'react-redux'
 
 class StudentInfo extends Component {
 
+  state = {
+    sinhVienState: {
+      maSV: '',
+      hoTen: '',
+      sdt: '',
+      email: ''
+    }
+  }
+
   handleChange = (event) => {
     let { name, value } = event.target;
     let newVal = { ...this.props.sinhVien.values, [name]: value };
@@ -17,11 +26,6 @@ class StudentInfo extends Component {
 
     let typeVal = event.target.getAttribute('inputname');
     if (typeVal === 'maSV') {
-      // Check validation id
-      let regExId = /^[0-9]+$/;
-      if (!regExId.test(value)) {
-        errorMess = 'ID phải là kiểu số !';
-      }
       // Check duplication id
       for (let i = 0; i < this.props.mangSinhVien.length; i++) {
         if (this.props.mangSinhVien[i].maSV === value) {
@@ -60,8 +64,7 @@ class StudentInfo extends Component {
     this.props.dispatch(action)
   }
 
-  handleSubmit = (event) => {
-    event.preventDefault();
+  handleSubmit = () => {
     let isValid = true;
 
     for (const key in this.props.sinhVien.errors) {
@@ -80,7 +83,7 @@ class StudentInfo extends Component {
 
     if (!isValid) {
       alert('Dữ liệu không hợp lệ !');
-      return;
+      return isValid;
     }
 
     let action = {
@@ -88,24 +91,39 @@ class StudentInfo extends Component {
       sinhVien: this.props.sinhVien.values
     }
     this.props.dispatch(action);
+
+    return isValid;
+  }
+
+  static getDerivedStateFromProps(newProps, currentState) {
+
+    if (newProps.sinhVien.values.maSV !== currentState.sinhVienState.maSV) {
+      return {
+        ...currentState, values: newProps.sinhVien.values
+      }
+    }
+
+    return currentState;
   }
 
   render() {
+    let { maSV, hoTen, sdt, email } = this.props.sinhVien.values;
+    let isVisible = this.props.isVisible;
     return (
       <div className="card my-5">
         <div className="card-header text-left bg-dark text-white"><h2>Thông tin sinh viên</h2></div>
         <div className="card-body">
           <form onSubmit={(event) => {
+            event.preventDefault();
             this.handleSubmit(event);
           }}>
             <div className="row">
               <div className="col-md-6">
                 <div className="form-group text-left">
                   <label htmlFor="maSV">Mã SV</label>
-                  <input onChange={(event) => {
+                  <input disabled={isVisible ? true : false} onChange={(event) => {
                     this.handleChange(event)
-                  }} type="text" className="form-control" id='maSV' name='maSV' inputname='maSV' />
-                  <span className='text-danger'>{this.props.sinhVien.errors.maSV}</span>
+                  }} type="text" className="form-control" id='maSV' name='maSV' inputname='maSV' value={maSV} /><span className='text-danger'>{this.props.sinhVien.errors.maSV}</span>
                 </div>
               </div>
               <div className="col-md-6">
@@ -113,8 +131,7 @@ class StudentInfo extends Component {
                   <label htmlFor="hoTen">Họ tên</label>
                   <input onChange={(event) => {
                     this.handleChange(event)
-                  }} type="text" className="form-control" id='hoTen' name='hoTen' inputname='hoTen' />
-                  <span className='text-danger'>{this.props.sinhVien.errors.hoTen}</span>
+                  }} type="text" className="form-control" id='hoTen' name='hoTen' inputname='hoTen' value={hoTen} /><span className='text-danger'>{this.props.sinhVien.errors.hoTen}</span>
                 </div>
               </div>
               <div className="col-md-6">
@@ -122,8 +139,7 @@ class StudentInfo extends Component {
                   <label htmlFor="sdt">Số điện thoại</label>
                   <input onChange={(event) => {
                     this.handleChange(event)
-                  }} type="text" className="form-control" id='sdt' name='sdt' inputname='sdt' />
-                  <span className='text-danger'>{this.props.sinhVien.errors.sdt}</span>
+                  }} type="text" className="form-control" id='sdt' name='sdt' inputname='sdt' value={sdt} /><span className='text-danger'>{this.props.sinhVien.errors.sdt}</span>
                 </div>
               </div>
               <div className="col-md-6">
@@ -131,13 +147,29 @@ class StudentInfo extends Component {
                   <label htmlFor="email">Email</label>
                   <input onChange={(event) => {
                     this.handleChange(event)
-                  }} type="text" className="form-control" id='email' name='email' inputname='email' />
-                  <span className='text-danger'>{this.props.sinhVien.errors.email}</span>
+                  }} type="text" className="form-control" id='email' name='email' inputname='email' value={email} /><span className='text-danger'>{this.props.sinhVien.errors.email}</span>
                 </div>
               </div>
             </div>
             <div className="form-group text-left">
-              <button className='btn btn-success'>Thêm sinh viên</button>
+              {!isVisible ? <button className='btn btn-success mr-3'>Thêm sinh viên</button> : null}
+              {}
+              {isVisible ? <button onClick={() => {
+                if (this.handleSubmit()) {
+                  let action = {
+                    type: 'CAP_NHAT_SINH_VIEN',
+                    svCapNhat: this.props.sinhVien.values
+                  }
+                  this.props.dispatch(action);
+                  alert('Cập nhật thành công !');
+                }
+              }} type='button' className='btn btn-info mr-3'>Cập nhật</button> : null}
+              <button onClick={() => {
+                let action = {
+                  type: 'RESET_FORM'
+                }
+                this.props.dispatch(action)
+              }} type='button' className='btn btn-secondary'>Reset</button>
             </div>
           </form>
         </div>
@@ -149,7 +181,8 @@ class StudentInfo extends Component {
 const mapStateToProps = (rootReducer) => {
   return {
     sinhVien: rootReducer.QLSinhVienReducer.sinhVien,
-    mangSinhVien: rootReducer.QLSinhVienReducer.mangSinhVien
+    mangSinhVien: rootReducer.QLSinhVienReducer.mangSinhVien,
+    isVisible: rootReducer.QLSinhVienReducer.isVisible
   }
 }
 
